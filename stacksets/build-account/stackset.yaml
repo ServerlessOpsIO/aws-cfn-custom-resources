@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Build account CFN Custom Resources StackSet
+
+Parameters:
+  TargetOuIds:
+    Type: CommaDelimitedList
+    Description: Comma separated list of OUs
+  TargetRegions:
+    Type: CommaDelimitedList
+    Description: Comma separated list of regions
+  StacksetTemplateBucket:
+    Type: String
+    Description: S3 bucket for stackset templates
+  AwsOrganizationId:
+    Type: String
+    Description: AWS Organization ID
+
+Resources:
+  DeployAccountCfnCustomResourcesSupportStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      TemplateURL: !Sub https://${StacksetTemplateBucket}.s3.amazonaws.com/build-account/template.yaml
+      StackSetName: OrgBuildAccountCfnCustomResources
+      Description: Provides shared AWS CFN Custom Resources
+      Parameters:
+        - ParameterKey: AwsOrganizationId
+          ParameterValue: !Ref AwsOrganizationId
+      StackInstancesGroup:
+        - DeploymentTargets:
+            OrganizationalUnitIds: !Ref TargetOuIds
+          Regions: !Ref TargetRegions
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        RegionConcurrencyType: PARALLEL
+        FailureToleranceCount: 1
+        MaxConcurrentCount: 5
+      PermissionModel: SERVICE_MANAGED

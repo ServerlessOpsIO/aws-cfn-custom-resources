@@ -2,7 +2,16 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS CFN Custom Resources
 
-Parameters: {}
+Parameters:
+  TargetRegions:
+    Type: String
+    Description: Comma separated list of regions
+  AwsOrganizationId:
+    Type: String
+    Description: AWS Organization ID
+  CiCdOuIds:
+    Type: String
+    Description: Comma separated listist of CI/CD OUs
 
 Resources:
   StacksetTemplateBucket:
@@ -10,3 +19,12 @@ Resources:
     Properties:
       BucketName: !Sub "${AWS::StackName}-stacksets-${AWS::AccountId}-${AWS::Region}"
 
+  BuildAccountStackSet:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: './stacksets/build-account/stackset.yaml'
+      Parameters:
+        StacksetTemplateBucket: !Ref StacksetTemplateBucket
+        TargetOuIds: !Ref CiCdOuIds
+        TargetRegions: !Ref TargetRegions
+        AwsOrganizationId: !Ref AwsOrganizationId
