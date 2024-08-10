@@ -1,0 +1,7 @@
+{
+    "TargetOuIds": "r-c834",
+    "TargetRegions": "us-east-1",
+    "AwsOrganizationId": "o-txczodrxtj",
+    "CiCdOuIds": "ou-c834-usscdqbg",
+    "CicdAwsAccountId": "346402060170"
+}

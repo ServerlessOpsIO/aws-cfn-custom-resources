@@ -1,0 +1,188 @@
+name: Main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Set extra GitHub environment variables
+        id: github-env-vars
+        uses: rlespinasse/github-slug-action@v4
+
+      - name: Checkout source
+        id: checkout-source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: install-python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.12
+          cache: pipenv
+
+      - name: Install pipenv
+        id: install-pipenv
+        shell: bash
+        run: python -m pip install --upgrade pipenv
+
+
+      - name: Install dependencies
+        id: install-python-deps
+        shell: bash
+        run: pipenv install --dev
+
+      - name: Assume build account AWS credentials
+        id: build-account-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsBuildRole
+          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
+          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
+          aws-region: us-east-1
+
+      - name: Install AWS SAM
+        uses: aws-actions/setup-sam@v2
+
+      - name: Validate artifact
+        run: sam validate --lint
+
+      - name: Build artifact
+        run: sam build --parallel --template template.yaml
+
+      - name: Upload SAM artifact
+        id: upload-sam
+        shell: bash
+        run: |
+          sam package \
+            --s3-bucket aws-sam-cli-sourcebucket-346402060170-us-east-1  \
+            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
+            --region us-east-1 \
+            --output-template-file packaged-template.yaml
+
+      - name: 'Upload pipeline artifact'
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.GITHUB_REPOSITORY_SLUG }}-${{ env.GITHUB_REF_SLUG_URL }}-${{ github.run_number }}-${{ github.sha }}
+          path: |
+            **/*
+            !.aws-sam/build
+            !**/.terraform/providers
+            !node_modules
+            !.git
+          if-no-files-found: error
+          retention-days: 30
+
+  deploy:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Set extra GitHub environment variables
+        id: github-env-vars
+        uses: rlespinasse/github-slug-action@v4
+
+      - name: Download artifact
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.GITHUB_REPOSITORY_SLUG }}-${{ env.GITHUB_REF_SLUG_URL }}-${{ github.run_number }}-${{ github.sha }}
+
+      - name: Setup Python
+        id: install-python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.12
+          cache: pipenv
+
+      - name: Install pipenv
+        id: install-pipenv
+        shell: bash
+        run: python -m pip install --upgrade pipenv
+
+
+      - name: Install dependencies
+        id: install-python-deps
+        shell: bash
+        run: pipenv install --dev
+
+      - name: Assume build account AWS credentials
+        id: build-account-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsBuildRole
+          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
+          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
+          aws-region: us-east-1
+
+      - name: Assume deploy account AWS credentials
+        id: deploy-account-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::349603509961:role/GitHubActionsCfnDeployRole
+          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
+          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
+          aws-region: us-east-1
+          role-chaining: true
+
+      - name: Install AWS SAM
+        uses: aws-actions/setup-sam@v2
+
+      - name: Process AWS Tags
+        id: processaws-tags
+        shell: bash
+        run: >-
+          AWS_CFN_TAGS=$(
+            cat cfn-tags.json |
+            jq -r '
+              to_entries |
+              map("\(.key)=\(.value|tostring)") |
+              . += [
+                "org:branch=${{ env.GITHUB_EVENT_REF_SLUG_URL }}",
+                "org:stackName=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_EVENT_REF_SLUG_URL }}"
+              ] |
+              join(" ")
+            '
+          ) &&
+          echo "AWS_CFN_TAGS=--tags ${AWS_CFN_TAGS}">> $GITHUB_ENV
+
+      - name: Process AWS Cloudformation Parameters
+        id: process-aws-parameters
+        shell: bash
+        run: >-
+         AWS_CFN_PARAMS=$(
+            cat cfn-parameters.json |
+            jq -r '
+              to_entries |
+              map("\(.key)=\(.value|tostring)") |
+              join(" ")
+            '
+          ) &&
+          echo "AWS_CFN_PARAMS=--parameter-overrides ${AWS_CFN_PARAMS}" >> $GITHUB_ENV
+
+      - name: Deploy via SAM
+        id: deploy-sam
+        shell: bash
+        run: |
+          sam deploy \
+            --template-file packaged-template.yaml \
+            --stack-name ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_EVENT_REF_SLUG_URL }} \
+            --s3-bucket aws-sam-cli-sourcebucket-346402060170-us-east-1 \
+            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
+            --region us-east-1 \
+            --role-arn arn:aws:iam::349603509961:role/CfnExecIamRole \
+            $AWS_CFN_PARAMS \
+            $AWS_CFN_TAGS
