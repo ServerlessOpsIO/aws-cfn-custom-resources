@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CFN Custom Resources Support
+
+Parameters:
+  CustomResourceSsmParamName:
+    Type: String
+    Description: ARN of Custom Resource target
+  CustomResourceArn:
+    Type: String
+    Description: ARN of Custom Resource target
+
+Resources:
+  CfnCustomResourceArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Ref CustomResourceSsmParamName
+      Type: String
+      Value: !Ref CustomResourceArn
