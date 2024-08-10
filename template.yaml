@@ -28,3 +28,4 @@ Resources:
         TargetOuIds: !Ref CiCdOuIds
         TargetRegions: !Ref TargetRegions
         AwsOrganizationId: !Ref AwsOrganizationId
+        CustomResourceTopicName: CfnCustomResourceTopicName

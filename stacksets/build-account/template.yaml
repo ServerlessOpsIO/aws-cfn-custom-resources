@@ -5,11 +5,16 @@ Parameters:
   AwsOrganizationId:
     Type: String
     Description: AWS Organization ID
+  CustomResourceTopicName:
+    Type: String
+    Description: Name of the SNS topic for custom resources
+
 
 Resources:
   CustomResourceTopic:
     Type: AWS::SNS::Topic
     Properties:
+      TopicName: !Ref CustomResourceTopicName
       DisplayName: CFN Custom Resource Topic
 
   CustomResourceTopicPolicy:
@@ -29,9 +34,3 @@ Resources:
                   - !Ref AwsOrganizationId
       Topics:
         - !Ref CustomResourceTopic
-
-Outputs:
-  CustomResourceTopicArn:
-    Value: !Ref CustomResourceTopic
-    Export:
-      Name: CustomResourceTopicArn
