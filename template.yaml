@@ -34,7 +34,7 @@ Resources:
         TargetOuIds: !Ref CiCdOuIds
         TargetRegions: !Ref TargetRegions
         AwsOrganizationId: !Ref AwsOrganizationId
-        CustomResourceTopicName: CfnCustomResourceTopicName
+        CustomResourceTopicName: CfnCustomResource
 
   DeployAccountStackSet:
     Type: AWS::Serverless::Application
@@ -45,7 +45,7 @@ Resources:
         TargetOuIds: !Ref TargetOuIds
         TargetRegions: !Ref TargetRegions
         CustomResourceSsmParamName: /org/cicd/CustomResourceTopic
-        CustomResourceArn: !Sub aws:arn:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResourceTopicName
+        CustomResourceArn: !Sub aws:arn:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResource
 
   DeployAccountManagementStack:
     Type: AWS::Serverless::Application
@@ -53,4 +53,4 @@ Resources:
       Location: './stacksets/deploy-account/template.yaml'
       Parameters:
         CustomResourceSsmParamName: /org/cicd/CustomResourceTopic
-        CustomResourceArn: !Sub aws:arn:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResourceTopicName
+        CustomResourceArn: !Sub aws:arn:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResource
