@@ -53,4 +53,4 @@ Resources:
       Location: './stacksets/deploy-account/template.yaml'
       Parameters:
         CustomResourceSsmParamName: /org/cicd/CustomResourceTopic
-        CustomResourceArn: !Sub aws:arn:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResource
+        CustomResourceArn: !Sub arn:aws:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResource
