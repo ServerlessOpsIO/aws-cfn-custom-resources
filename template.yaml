@@ -20,11 +20,6 @@ Parameters:
     Description: AWS Account ID of the CI/CD account
 
 Resources:
-  StacksetTemplateBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "${AWS::StackName}-stacksets-${AWS::AccountId}-${AWS::Region}"
-
   BuildAccountStackSet:
     Type: AWS::Serverless::Application
     Properties:
