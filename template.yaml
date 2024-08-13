@@ -30,7 +30,6 @@ Resources:
     Properties:
       Location: './stacksets/build-account/stackset.yaml'
       Parameters:
-        StacksetTemplateBucket: !Ref StacksetTemplateBucket
         TargetOuIds: !Ref CiCdOuIds
         TargetRegions: !Ref TargetRegions
         AwsOrganizationId: !Ref AwsOrganizationId
@@ -41,7 +40,6 @@ Resources:
     Properties:
       Location: './stacksets/deploy-account/stackset.yaml'
       Parameters:
-        StacksetTemplateBucket: !Ref StacksetTemplateBucket
         TargetOuIds: !Ref TargetOuIds
         TargetRegions: !Ref TargetRegions
         CustomResourceSsmParamName: /org/cicd/CustomResourceTopic

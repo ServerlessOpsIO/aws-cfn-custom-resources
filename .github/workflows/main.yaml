@@ -52,8 +52,19 @@ jobs:
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
 
+      # FIXME: We're only validating the top-level template and not the rest.
       - name: Validate artifact
         run: sam validate --lint
+
+      - name: Synethsize StackSet templates
+        run: |
+          for _f in $(find . -type f -name 'stackset.yaml'); do
+            _dir="$(dirname $_f)/" \
+            yq \
+              -i \
+              '(.. | select(has("localTemplateFile")) | .localTemplateFile) |= load_str(strenv(_dir) + .)' \
+              $_f;
+          done
 
       - name: Build artifact
         run: sam build --parallel --template template.yaml

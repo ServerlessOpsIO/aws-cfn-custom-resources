@@ -1,3 +1,6 @@
+Metadata:
+  localTemplateFile: &template_body ./template.yaml
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Deployment account CFN Custom Resources Support StackSet
 
@@ -8,9 +11,6 @@ Parameters:
   TargetRegions:
     Type: CommaDelimitedList
     Description: Comma separated list of regions
-  StacksetTemplateBucket:
-    Type: String
-    Description: S3 bucket for stackset templates
   CustomResourceArn:
     Type: String
     Description: Name of the SNS topic for custom resources
@@ -22,7 +22,6 @@ Resources:
   DeployAccountCfnCustomResourcesSupportStackSet:
     Type: AWS::CloudFormation::StackSet
     Properties:
-      TemplateURL: !Sub https://${StacksetTemplateBucket}.s3.amazonaws.com/deploy-account/template.yaml
       StackSetName: OrgDeployAccountCfnCustomResourcesSupport
       Description: Provides service discovery for AWS CFN Custom Resources
       Parameters:
@@ -44,3 +43,4 @@ Resources:
         FailureToleranceCount: 1
         MaxConcurrentCount: 5
       PermissionModel: SERVICE_MANAGED
+      TemplateBody: *template_body
