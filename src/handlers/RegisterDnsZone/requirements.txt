@@ -1,2 +1,2 @@
 aws_lambda_powertools
-mypy_boto3_route53
+boto3-stubs[route53]
