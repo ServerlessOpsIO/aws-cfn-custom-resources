@@ -10,11 +10,12 @@ python_version = "3.12"
 aws-lambda-powertools = "*"
 boto3-stubs = { extras = ["ec2" ], version = "*"}
 crhelper = "*"
+mypy-boto3-route53 = "*"
 
 [dev-packages]
 cfn-lint = "*"
 flake8 = "*"
-moto = {extras = ["ec2", "sts"], version = "*"}
+moto = {extras = ["route53", "sts"], version = "*"}
 mypy = "*"
 pylint = "*"
 pytest = "*"
@@ -22,12 +23,12 @@ pytest-cov = "*"
 pytest-mock = "*"
 pytest-pylint = "*"
 tox = "*"
-mypy_boto3_logs = "*"
+genson = "*"
 
 [scripts]
 #install-lambda-functions = "pipenv install -r src/requirements.txt"
 test = "pytest -vv --cov src --cov-report term-missing --cov-fail-under 95 tests"
-unit-test = "pytest -vv --cov src --cov-report term-missing --cov-fail-under 95 tests/unit"
-integ-test = "pytest -vv --cov src --cov-report term-missing --cov-fail-under 95 tests/integration"
+test-unit = "pytest -vv --cov src --cov-report term-missing --cov-fail-under 95 tests/unit"
+test-int = "pytest -vv --cov src --cov-report term-missing --cov-fail-under 95 tests/integration"
 flake8 = "flake8"
 lint = "pylint"
