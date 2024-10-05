@@ -118,13 +118,13 @@ def mock_fn(
 
 # Tests
 def test_create_or_update_as_create(
-        mock_fn: ModuleType,
-        mock_context: Tuple[str, str],
-        mock_route53_client: Route53Client,
-        mock_event_create: CloudFormationCustomResourceEvent,
-        mock_data: EventResourceProperties,
-        mock_hosted_zone_id: str
-    ) -> None:
+    mock_fn: ModuleType,
+    mock_context: Tuple[str, str],
+    mock_route53_client: Route53Client,
+    mock_event_create: CloudFormationCustomResourceEvent,
+    mock_data: EventResourceProperties,
+    mock_hosted_zone_id: str
+) -> None:
     event = mock_event_create._data
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
@@ -155,13 +155,13 @@ def test_create_or_update_as_create(
     assert nameservers[3] in values
 
 def test_create_or_update_as_update(
-        mock_fn: ModuleType,
-        mock_context: Tuple[str, str],
-        mock_route53_client: Route53Client,
-        mock_event_update: CloudFormationCustomResourceEvent,
-        mock_data: EventResourceProperties,
-        mock_hosted_zone_id: str
-    ) -> None:
+    mock_fn: ModuleType,
+    mock_context: Tuple[str, str],
+    mock_route53_client: Route53Client,
+    mock_event_update: CloudFormationCustomResourceEvent,
+    mock_data: EventResourceProperties,
+    mock_hosted_zone_id: str
+) -> None:
     event = mock_event_update._data
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
@@ -192,13 +192,13 @@ def test_create_or_update_as_update(
     assert nameservers[3] in values
 
 def test_delete(
-        mock_fn: ModuleType,
-        mock_context: Tuple[str, str],
-        mock_route53_client: Route53Client,
-        mock_event_create: CloudFormationCustomResourceEvent,
-        mock_event_delete: CloudFormationCustomResourceEvent,
-        mock_data: EventResourceProperties,
-        mock_hosted_zone_id: str
+    mock_fn: ModuleType,
+    mock_context: Tuple[str, str],
+    mock_route53_client: Route53Client,
+    mock_event_create: CloudFormationCustomResourceEvent,
+    mock_event_delete: CloudFormationCustomResourceEvent,
+    mock_data: EventResourceProperties,
+    mock_hosted_zone_id: str
 ) -> None:
 
     # Create record to be deleted
