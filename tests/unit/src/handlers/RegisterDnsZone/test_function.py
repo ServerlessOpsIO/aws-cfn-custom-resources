@@ -1,20 +1,20 @@
 import json
 import os
 import boto3
-import moto.route53
 import moto.route53.utils
 import pytest
 
 from aws_lambda_powertools.utilities.data_classes import (
     CloudFormationCustomResourceEvent,
 )
+from pytest_mock import MockerFixture
 from collections import namedtuple
 from moto import mock_aws
 from mypy_boto3_route53 import Route53Client
 from types import ModuleType
-from typing import cast, Dict, Generator, Tuple
+from typing import cast, Generator, Tuple
 
-from src.handlers.RegisterDnsZone.function import EventResourceProperties
+from src.handlers.RegisterDnsZone.types import EventResourceProperties
 
 FN_NAME = 'RegisterDnsZone'
 DATA_DIR = './data'
@@ -37,10 +37,15 @@ def aws_credentials() -> None:
     os.environ["AWS_SESSION_TOKEN"] = "testing"
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
-@pytest.fixture
-def mock_route53_client(aws_credentials) -> Generator[Route53Client, None, None]:
+@pytest.fixture()
+def mocked_aws(aws_credentials):
+    '''Mock all AWS interactions'''
     with mock_aws():
-        yield boto3.client('route53')
+        yield
+
+@pytest.fixture
+def mock_route53_client(mocked_aws) -> Generator[Route53Client, None, None]:
+    yield boto3.client('route53')
 
 @pytest.fixture()
 def mock_hosted_zone_id(mock_route53_client: Route53Client) -> str:
@@ -102,27 +107,26 @@ def mock_data(data: str = DATA) -> EventResourceProperties:
 
 @pytest.fixture()
 def mock_fn(
-    mock_route53_client: Route53Client,
+    mocked_aws,
     mock_hosted_zone_id: str,
-    mocker
+    mocker: MockerFixture,
+    mock_hosted_zone_id: str
 ) -> Generator[ModuleType, None, None]:
-    '''Return the module to be tested'''
+    '''Patch the environment variables for the function'''
     import src.handlers.RegisterDnsZone.function as fn
-
-    # Module patching
-    mocker.patch('src.handlers.RegisterDnsZone.function.boto3.client', return_value=mock_route53_client)
-    mocker.patch('src.handlers.RegisterDnsZone.function.HOSTED_ZONE_ID', mock_hosted_zone_id)
-
+    mocker.patch(
+        'src.handlers.RegisterDnsZone.function.HOSTED_ZONE_ID',
+        mock_hosted_zone_id
+    )
     yield fn
-
 
 # Tests
 def test_create_or_update_as_create(
     mock_fn: ModuleType,
-    mock_context: Tuple[str, str],
-    mock_route53_client: Route53Client,
     mock_event_create: CloudFormationCustomResourceEvent,
     mock_data: EventResourceProperties,
+    mock_context: Tuple[str, str],
+    mock_route53_client: Route53Client,
     mock_hosted_zone_id: str
 ) -> None:
     event = mock_event_create._data

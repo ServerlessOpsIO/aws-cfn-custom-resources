@@ -27,12 +27,6 @@ except Exception as e:
     helper.init_failure(e)
 
 
-@dataclass
-class EventResourceProperties:
-    ZoneName: str
-    NameServers: Optional[str]
-
-
 @helper.create
 @helper.update
 @event_source(data_class=CloudFormationCustomResourceEvent)
