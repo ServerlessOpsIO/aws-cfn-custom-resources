@@ -2,7 +2,7 @@ Metadata:
   localTemplateFile: &template_body ./template.yaml
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Build account CFN Custom Resources StackSet
+Description: Execution account CFN Custom Resources StackSet
 
 Parameters:
   TargetOuIds:
@@ -17,6 +17,12 @@ Parameters:
   CustomResourceTopicName:
     Type: String
     Description: Name of the SNS topic for custom resources
+  DnsRootZoneId:
+    Type: String
+    Description: Hosted Zone ID
+  DnsRootZoneAccountId:
+    Type: String
+    Description: DNS Root Zone Account ID
 
 Resources:
   DeployAccountCfnCustomResourcesSupportStackSet:
@@ -29,6 +35,10 @@ Resources:
           ParameterValue: !Ref AwsOrganizationId
         - ParameterKey: CustomResourceTopicName
           ParameterValue: !Ref CustomResourceTopicName
+        - ParameterKey: DnsRootZoneId
+          ParameterValue: !Ref DnsRootZoneId
+        - ParameterKey: DnsRootZoneAccountId
+          ParameterValue: !Ref DnsRootZoneAccountId
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Ref TargetOuIds

@@ -18,6 +18,18 @@ Parameters:
   CicdAwsAccountId:
     Type: String
     Description: AWS Account ID of the CI/CD account
+  DnsRootZoneId:
+    Type: String
+    Description: DNS Root Zone ID
+  DnsRootZoneAccountId:
+    Type: String
+    Description: DNS Root Zone Account ID
+
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - I3011
 
 Resources:
   BuildAccountStackSet:
@@ -29,6 +41,8 @@ Resources:
         TargetRegions: !Ref TargetRegions
         AwsOrganizationId: !Ref AwsOrganizationId
         CustomResourceTopicName: CfnCustomResource
+        DnsRootZoneId: !Ref DnsRootZoneId
+        DnsRootZoneAccountId: !Ref DnsRootZoneAccountId
 
   DeployAccountStackSet:
     Type: AWS::Serverless::Application

@@ -8,13 +8,13 @@ python_version = "3.12"
 
 [packages]
 aws-lambda-powertools = "*"
-boto3-stubs = { extras = ["route53"], version = "*"}
+boto3-stubs = { extras = ["route53","sts"], version = "*"}
 crhelper = "*"
 
 [dev-packages]
 cfn-lint = "*"
 flake8 = "*"
-moto = {extras = ["route53"], version = "*"}
+moto = {extras = ["route53","sts"], version = "*"}
 mypy = "*"
 pylint = "*"
 pytest = "*"

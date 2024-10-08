@@ -4,7 +4,7 @@ from crhelper import CfnResource
 from dataclasses import dataclass
 from mypy_boto3_route53 import Route53Client
 from mypy_boto3_route53.type_defs import ChangeBatchTypeDef, ChangeResourceRecordSetsRequestRequestTypeDef
-from typing import Optional
+from mypy_boto3_sts.type_defs import CredentialsTypeDef
 
 from aws_lambda_powertools.logging import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
@@ -15,16 +15,54 @@ from aws_lambda_powertools.utilities.data_classes import (
 helper = CfnResource()
 
 try:
-    ROUTE53: Route53Client = boto3.client('route53')
     # FIXME: We should be able to set the service name from the environment.
     LOGGER = Logger(utc=True, service="RegisterDnsZone")
-    HOSTED_ZONE_ID = os.environ.get('HOSTED_ZONE_ID', '')
+    STS_CLIENT = boto3.client('sts')
+    CROSS_ACCOUNT_IAM_ROLE_NAME = 'RegisterDnsZoneCrossAccountRole'
+    DNS_ROOT_ZONE_ID = os.environ.get('DNS_ROOT_ZONE_ID', '')
+    DNS_ROOT_ZONE_ACCOUNT_ID = os.environ.get('DNS_ROOT_ZONE_ACCOUNT_ID', '')
 
-    if HOSTED_ZONE_ID == '':
-        raise ValueError("HOSTED_ZONE_ID must be provided")
+    if DNS_ROOT_ZONE_ID == '':
+        raise ValueError("DNS_ROOT_ZONE_ID must be provided")
+    if DNS_ROOT_ZONE_ACCOUNT_ID == '':
+        raise ValueError("DNS_ROOT_ZONE_ACCOUNT_ID must be provided")
 
 except Exception as e:
+    LOGGER.exception(e)
     helper.init_failure(e)
+
+
+def _get_cross_account_credentials(
+    account_id: str,
+    role_name: str
+) -> CredentialsTypeDef:
+    '''Return the IAM role for cross-account access'''
+    role_arn = 'arn:aws:iam::{}:role/{}'.format(account_id, role_name)
+    response = STS_CLIENT.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName='RegisterDnsZoneCrossAccount'
+    )
+
+    return response['Credentials']
+
+
+def _get_cross_account_route53_client(
+    account_id: str,
+    role_name: str
+) -> Route53Client:
+    '''Return a Route 53 client for cross-account access'''
+    credentials = _get_cross_account_credentials(
+        account_id,
+        role_name
+    )
+    client = boto3.client(
+        'route53',
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken']
+    )
+
+    return client
 
 
 @helper.create
@@ -49,6 +87,7 @@ def create_or_update(event: CloudFormationCustomResourceEvent, _: LambdaContext)
         "Creating zone NS record",
         extra = {
             'zone_name': zone_name,
+            'zone_id': DNS_ROOT_ZONE_ID,
             'nameservers': nameservers
         }
     )
@@ -70,12 +109,17 @@ def create_or_update(event: CloudFormationCustomResourceEvent, _: LambdaContext)
     }
 
     change_args: ChangeResourceRecordSetsRequestRequestTypeDef = {
-        'HostedZoneId': HOSTED_ZONE_ID,
+        'HostedZoneId': DNS_ROOT_ZONE_ID,
         'ChangeBatch': change_batch
     }
 
+
+    route53_client = _get_cross_account_route53_client(
+       DNS_ROOT_ZONE_ACCOUNT_ID,
+       CROSS_ACCOUNT_IAM_ROLE_NAME
+    )
     # Update the Route 53 hosted zone with the new NS record
-    response = ROUTE53.change_resource_record_sets(**change_args)
+    response = route53_client.change_resource_record_sets(**change_args)
 
     LOGGER.info("Change Info: {}".format(response['ChangeInfo']))
 
@@ -101,6 +145,7 @@ def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
         "Deleting zone NS record",
         extra = {
             'zone_name': zone_name,
+            'zone_id': DNS_ROOT_ZONE_ID,
             'nameservers': nameservers
         }
     )
@@ -120,9 +165,14 @@ def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
         ]
     }
 
+    route53_client = _get_cross_account_route53_client(
+       DNS_ROOT_ZONE_ACCOUNT_ID,
+       CROSS_ACCOUNT_IAM_ROLE_NAME
+    )
+
     # Delete the NS record from the Route 53 hosted zone
-    response = ROUTE53.change_resource_record_sets(
-        HostedZoneId=HOSTED_ZONE_ID,
+    response = route53_client.change_resource_record_sets(
+        HostedZoneId=DNS_ROOT_ZONE_ID,
         ChangeBatch=change_batch
     )
 
