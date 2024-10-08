@@ -14,47 +14,29 @@ jobs:
       contents: read
 
     steps:
-      - name: Set extra GitHub environment variables
-        id: github-env-vars
-        uses: rlespinasse/github-slug-action@v4
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
 
-      - name: Checkout source
-        id: checkout-source
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        id: install-python
-        uses: actions/setup-python@v3
+      - name: Setup Python environment
+        uses: ServerlessOpsIO/gha-setup-python@v1
         with:
-          python-version: 3.12
-          cache: pipenv
+          python_version: 3.12
 
-      - name: Install pipenv
-        id: install-pipenv
-        shell: bash
-        run: python -m pip install --upgrade pipenv
-
-
-      - name: Install dependencies
-        id: install-python-deps
-        shell: bash
-        run: pipenv install --dev
-
-      - name: Assume build account AWS credentials
-        id: build-account-credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsBuildRole
-          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
-          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
-          aws-region: us-east-1
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
 
       - name: Install AWS SAM
         uses: aws-actions/setup-sam@v2
 
       # FIXME: We're only validating the top-level template and not the rest.
-      - name: Validate artifact
-        run: sam validate --lint
+      - name: Validate SAM template
+        run: sam validate --lint -t template.yaml
+
+      - name: Validate delegate SAM template
+        run: sam validate --lint -t delegate-template.yaml
+
 
       - name: Synethsize StackSet templates
         run: |
@@ -66,34 +48,37 @@ jobs:
               $_f;
           done
 
-      - name: Build artifact
-        run: sam build --parallel --template template.yaml
-
       - name: Upload SAM artifact
-        id: upload-sam
+        id: upload-sam-template
         shell: bash
+        env:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
         run: |
           sam package \
-            --s3-bucket aws-sam-cli-sourcebucket-346402060170-us-east-1  \
+            --template template.yaml \
+            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
             --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
             --region us-east-1 \
             --output-template-file packaged-template.yaml
 
-      - name: 'Upload pipeline artifact'
-        id: upload-artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.GITHUB_REPOSITORY_SLUG }}-${{ env.GITHUB_REF_SLUG_URL }}-${{ github.run_number }}-${{ github.sha }}
-          path: |
-            **/*
-            !.aws-sam/build
-            !**/.terraform/providers
-            !node_modules
-            !.git
-          if-no-files-found: error
-          retention-days: 30
+      - name: Upload SAM artifact
+        id: upload-sam-stackset-template
+        shell: bash
+        env:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+        run: |
+          sam package \
+            --template delegate-template.yaml \
+            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
+            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
+            --region us-east-1 \
+            --output-template-file packaged-delegate-template.yaml
 
-  deploy:
+      - name: Store Artifacts
+        uses: ServerlessOpsIO/gha-store-artifacts@v1
+
+
+  deploy_management:
     needs:
       - build
     runs-on: ubuntu-latest
@@ -102,98 +87,66 @@ jobs:
       contents: read
 
     steps:
-      - name: Set extra GitHub environment variables
-        id: github-env-vars
-        uses: rlespinasse/github-slug-action@v4
-
-      - name: Download artifact
-        id: download-artifact
-        uses: actions/download-artifact@v4
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
         with:
-          name: ${{ env.GITHUB_REPOSITORY_SLUG }}-${{ env.GITHUB_REF_SLUG_URL }}-${{ github.run_number }}-${{ github.sha }}
+          checkout_artifact: true
 
-      - name: Setup Python
-        id: install-python
-        uses: actions/setup-python@v3
+      - name: Setup Python environment
+        uses: ServerlessOpsIO/gha-setup-python@v1
         with:
-          python-version: 3.12
-          cache: pipenv
+          python_version: 3.12
 
-      - name: Install pipenv
-        id: install-pipenv
-        shell: bash
-        run: python -m pip install --upgrade pipenv
-
-
-      - name: Install dependencies
-        id: install-python-deps
-        shell: bash
-        run: pipenv install --dev
-
-      - name: Assume build account AWS credentials
-        id: build-account-credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsBuildRole
-          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
-          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
-          aws-region: us-east-1
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
+          deploy_aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
+          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
 
-      - name: Assume deploy account AWS credentials
-        id: deploy-account-credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Deploy via AWS SAM
+        uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
         with:
-          role-to-assume: arn:aws:iam::349603509961:role/GitHubActionsCfnDeployRole
-          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
-          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
-          aws-region: us-east-1
-          role-chaining: true
+          aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
+          template_file: packaged-template.yaml
+          cfn_capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+          env_json: ${{ toJson(env) }}
+          secrets_json: ${{ toJson(secrets) }}
 
-      - name: Install AWS SAM
-        uses: aws-actions/setup-sam@v2
 
-      - name: Process AWS Tags
-        id: processaws-tags
-        shell: bash
-        run: >-
-          AWS_CFN_TAGS=$(
-            cat cfn-tags.json |
-            jq -r '
-              to_entries |
-              map("\(.key)=\(.value|tostring)") |
-              . += [
-                "org:branch=${{ env.GITHUB_EVENT_REF_SLUG_URL }}",
-                "org:stackName=${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_EVENT_REF_SLUG_URL }}"
-              ] |
-              join(" ")
-            '
-          ) &&
-          echo "AWS_CFN_TAGS=--tags ${AWS_CFN_TAGS}">> $GITHUB_ENV
+  deploy_delegate:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
-      - name: Process AWS Cloudformation Parameters
-        id: process-aws-parameters
-        shell: bash
-        run: >-
-         AWS_CFN_PARAMS=$(
-            cat cfn-parameters.json |
-            jq -r '
-              to_entries |
-              map("\(.key)=\(.value|tostring)") |
-              join(" ")
-            '
-          ) &&
-          echo "AWS_CFN_PARAMS=--parameter-overrides ${AWS_CFN_PARAMS}" >> $GITHUB_ENV
+    steps:
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
+        with:
+          checkout_artifact: true
 
-      - name: Deploy via SAM
-        id: deploy-sam
-        shell: bash
-        run: |
-          sam deploy \
-            --template-file packaged-template.yaml \
-            --stack-name ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ env.GITHUB_EVENT_REF_SLUG_URL }} \
-            --s3-bucket aws-sam-cli-sourcebucket-346402060170-us-east-1 \
-            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
-            --region us-east-1 \
-            --role-arn arn:aws:iam::349603509961:role/CfnExecIamRole \
-            $AWS_CFN_PARAMS \
-            $AWS_CFN_TAGS
+      - name: Setup Python environment
+        uses: ServerlessOpsIO/gha-setup-python@v1
+        with:
+          python_version: 3.12
+
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+        with:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
+          deploy_aws_account_id: ${{ secrets.AWS_STACKSETS_ACCOUNT_ID }}
+          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
+
+      - name: Deploy via AWS SAM
+        uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
+        with:
+          aws_account_id: ${{ secrets.AWS_STACKSETS_ACCOUNT_ID }}
+          template_file: packaged-delegate-template.yaml
+          cfn_capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+          env_json: ${{ toJson(env) }}
+          secrets_json: ${{ toJson(secrets) }}
