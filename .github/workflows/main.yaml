@@ -134,13 +134,32 @@ jobs:
         with:
           python_version: 3.12
 
-      - name: Assume AWS Credentials
-        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+#      - name: Assume AWS Credentials
+#        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+#        with:
+#          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+#          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
+#          deploy_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+#          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
+
+      - name: Assume build account AWS credentials
+        id: build-account-credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
-          deploy_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
+          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsBuildRole
+          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
+          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
+          aws-region: us-east-1
+
+      - name: Assume deploy account AWS credentials
+        id: deploy-account-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::346402060170:role/GitHubActionsCfnDeployRole
+          role-session-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}-${{ github.run_number }}-${{ github.job }}
+          role-duration-seconds: 3600   # 60 minutes; needs to be less than our current max duration
+          aws-region: us-east-1
+          role-chaining: true
 
       - name: Deploy via AWS SAM
         uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
