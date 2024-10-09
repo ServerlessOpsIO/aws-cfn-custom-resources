@@ -24,6 +24,7 @@ Resources:
     Properties:
       StackSetName: OrgDeployAccountCfnCustomResourcesSupport
       Description: Provides service discovery for AWS CFN Custom Resources
+      CallAs: DELEGATED_ADMIN
       Parameters:
         - ParameterKey: CustomResourceSsmParamName
           ParameterValue: !Ref CustomResourceSsmParamName

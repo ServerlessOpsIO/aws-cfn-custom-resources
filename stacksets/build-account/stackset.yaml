@@ -30,6 +30,7 @@ Resources:
     Properties:
       StackSetName: OrgBuildAccountCfnCustomResources
       Description: Provides shared AWS CFN Custom Resources
+      CallAs: DELEGATED_ADMIN
       Parameters:
         - ParameterKey: AwsOrganizationId
           ParameterValue: !Ref AwsOrganizationId
