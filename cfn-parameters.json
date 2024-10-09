@@ -1,9 +1,9 @@
 {
-    "TargetOuIds": "r-c834",
+    "TargetOuIds": $secrets.AWS_ORG_ROOT_ID,
     "TargetRegions": "us-east-1",
-    "AwsOrganizationId": "o-txczodrxtj",
-    "CiCdOuIds": "ou-c834-usscdqbg",
-    "CicdAwsAccountId": "346402060170",
+    "AwsOrganizationId": $secrets.AWS_ORG_ID,
+    "CiCdOuIds": $secrets.AWS_ORG_CICD_OU_ID,
+    "CicdAwsAccountId": $secrets.AWS_CICD_ACCOUNT_ID,
     "DnsRootZoneId": $secrets.DNS_ROOT_ZONE_ID,
     "DnsRootZoneAccountId": $secrets.DNS_ROOT_ZONE_ACCOUNT_ID
 }
