@@ -132,6 +132,17 @@ jobs:
           sam publish \
             --template applications/aws-cfn-custom-resources/template.yaml
 
+      - name: Set SAR application policy
+        id: set-sar-policy
+        shell: bash
+        env:
+          account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+          org_id: ${{ secrets.AWS_ORG_ID }}
+        run: |
+          aws serverlessrepo put-application-policy \
+            --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
+            --statements PrincipalOrgIDs=${{ env.org_id }},Actions=Deploy
+
 
   deploy_management:
     needs:
