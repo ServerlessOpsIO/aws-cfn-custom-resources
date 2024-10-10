@@ -37,6 +37,9 @@ jobs:
       - name: Validate delegate SAM template
         run: sam validate --lint -t delegate-template.yaml
 
+      - name: Validate SAM app template
+        run: sam validate --lint -t applications/aws-cfn-custom-resources/template.yaml
+
       # We have a StackSet with a Lambda function in it.
       - name: Upload SAM artifact (build-account-template)
         id: upload-sam-build-account-template
@@ -45,11 +48,11 @@ jobs:
           build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
         run: |
           sam package \
-            --template stacksets/build-account/template.yaml \
-            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
+            --template applications/aws-cfn-custom-resources/template.yaml \
+            --s3-bucket aws-sar-${{ env.build_aws_account_id }}-us-east-1  \
             --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
             --region us-east-1 \
-            --output-template-file stacksets/build-account/packaged-template.yaml
+            --output-template-file applications/aws-cfn-custom-resources/template.yaml
 
       - name: Synethsize StackSet templates
         run: |
@@ -89,6 +92,39 @@ jobs:
 
       - name: Store Artifacts
         uses: ServerlessOpsIO/gha-store-artifacts@v1
+
+
+  deploy_sar:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
+        with:
+          checkout_artifact: true
+
+      - name: Setup Python environment
+        uses: ServerlessOpsIO/gha-setup-python@v1
+        with:
+          python_version: 3.12
+
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+        with:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
+
+      - name: Publish SAR Application
+        id: publish-sar
+        shell: bash
+        run: |
+          sam publish \
+            --template applications/aws-cfn-custom-resources/template.yaml
 
 
   deploy_management:
@@ -131,6 +167,7 @@ jobs:
   deploy_delegate:
     needs:
       - build
+      - deploy_sar
     runs-on: ubuntu-latest
     permissions:
       id-token: write

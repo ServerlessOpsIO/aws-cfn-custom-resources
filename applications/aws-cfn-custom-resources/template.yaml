@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CFN Custom Resources Support
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cfn-custom-resources
+    Description: CFN Custom Resources Support
+    Author: ServerlessOps
+    ReadmeUrl: README.md
+    HomePageUrl: https://github.com/ServerlessOpsIO/aws-cfn-custom-resources
+    SourceCodeUrl: https://github.com/ServerlessOpsIO/aws-cfn-custom-resources
+
+Parameters:
+  AwsOrganizationId:
+    Type: String
+    Description: AWS Organization ID
+  CustomResourceTopicName:
+    Type: String
+    Description: Name of the SNS topic for custom resources
+  DnsRootZoneId:
+    Type: String
+    Description: Hosted Zone ID
+  DnsRootZoneAccountId:
+    Type: String
+    Description: DNS Root Zone Account ID
+
+Resources:
+  CustomResourceTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref CustomResourceTopicName
+      DisplayName: CFN Custom Resource Topic
+
+  CustomResourceTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref CustomResourceTopic
+            Condition:
+              StringEquals:
+                "aws:PrincipalOrgID":
+                  - !Ref AwsOrganizationId
+      Topics:
+        - !Ref CustomResourceTopic
+
+  RegisterDnsZoneFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: function.handler
+      Runtime: python3.12
+      CodeUri: ../../src/handlers/RegisterDnsZone
+      Description: Register DNS Sub Zone
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          DNS_ROOT_ZONE_ID: !Ref DnsRootZoneId
+          DNS_ROOT_ZONE_ACCOUNT_ID: !Ref DnsRootZoneAccountId
+      Events:
+        RegisterDnsSubZone:
+          Type: SNS
+          Properties:
+            Topic: !Ref CustomResourceTopic
+            FilterPolicyScope: MessageBody
+            FilterPolicy:
+              ResourceType:
+                - Custom::RegisterDnsZone
