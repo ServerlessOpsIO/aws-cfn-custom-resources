@@ -1,5 +1,5 @@
 Metadata:
-  localTemplateFile: &template_body ./packaged-template.yaml
+  localTemplateFile: &template_body ./template.yaml
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Execution account CFN Custom Resources StackSet
