@@ -141,7 +141,7 @@ jobs:
         run: |
           aws serverlessrepo put-application-policy \
             --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
-            --statements PrincipalOrgIDs=${{ env.org_id }},Actions=Deploy
+            --statements PrincipalOrgIDs=${{ env.org_id }},Principals=*,Actions=Deploy,UnshareApplication
 
 
   deploy_management:
