@@ -40,6 +40,12 @@ jobs:
       - name: Validate SAM app template
         run: sam validate --lint -t applications/aws-cfn-custom-resources/template.yaml
 
+      - name: Unit tests
+        id: unit-tests
+        shell: bash
+        run: pipenv run pytest
+
+
       # We have a StackSet with a Lambda function in it.
       - name: Upload SAM artifact (build-account-template)
         id: upload-sam-build-account-template
