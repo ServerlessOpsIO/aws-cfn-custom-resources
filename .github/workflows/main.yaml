@@ -141,7 +141,20 @@ jobs:
         run: |
           aws serverlessrepo put-application-policy \
             --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
-            --statements PrincipalOrgIDs=${{ env.org_id }},Principals=*,Actions=Deploy,UnshareApplication
+            --statements PrincipalOrgIDs=${{ env.org_id }},Principals=*,Actions=Deploy,UnshareApplication,CreateCloudFormationTemplate
+
+      - name: Get SAR template URL
+        id: get-sar-template-url
+        shell: bash
+        env:
+          account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+        run: |
+          template_url=$(aws serverlessrepo create-cloud-formation-template \
+            --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
+            --query 'TemplateUrl' \
+            --output text)
+          echo "Setting SAR application template URL"
+          echo "template-utl=$template_url" >> $GITHUB_ENV
 
 
   deploy_management:
