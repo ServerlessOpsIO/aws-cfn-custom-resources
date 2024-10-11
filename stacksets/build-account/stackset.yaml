@@ -36,10 +36,6 @@ Resources:
           ParameterValue: !Ref AwsOrganizationId
         - ParameterKey: CustomResourceTopicName
           ParameterValue: !Ref CustomResourceTopicName
-        - ParameterKey: DnsRootZoneId
-          ParameterValue: !Ref DnsRootZoneId
-        - ParameterKey: DnsRootZoneAccountId
-          ParameterValue: !Ref DnsRootZoneAccountId
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Ref TargetOuIds
