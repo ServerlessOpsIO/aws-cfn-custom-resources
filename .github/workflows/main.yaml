@@ -154,7 +154,7 @@ jobs:
             --query 'TemplateUrl' \
             --output text)
           echo "Setting SAR application template URL"
-          echo "template-utl=$template_url" >> $GITHUB_OUTPUT
+          echo "template-url=$template_url" >> $GITHUB_OUTPUT
 
     outputs:
       sar-template-url: ${{ steps.get-sar-template-url.outputs.template-url }}
