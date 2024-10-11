@@ -154,7 +154,11 @@ jobs:
             --query 'TemplateUrl' \
             --output text)
           echo "Setting SAR application template URL"
-          echo "template-utl=$template_url" >> $GITHUB_ENV
+          echo "template-utl=$template_url" >> $GITHUB_OUTPUT
+
+    outputs:
+      sar-template-url: ${{ steps.get-sar-template-url.outputs.template-url }}
+
 
 
   deploy_management:
@@ -213,6 +217,13 @@ jobs:
         uses: ServerlessOpsIO/gha-setup-python@v1
         with:
           python_version: 3.12
+
+      - name: Get SAR template URL
+        id: get-sar-template-url
+        shell: bash
+        env:
+          url: ${{ needs.deploy_sar.outputs.sar-template-url }}
+        run: echo $url
 
       - name: Assume AWS Credentials
         uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
