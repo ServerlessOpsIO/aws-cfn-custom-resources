@@ -13,7 +13,7 @@ Resources:
   CustomResourceTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Ref CustomResourceTopicName
+      TopicName: CustomResourceTopic-old
       DisplayName: CFN Custom Resource Topic
 
   CustomResourceTopicPolicy:
