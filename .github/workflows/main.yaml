@@ -221,9 +221,7 @@ jobs:
       - name: Get SAR template URL
         id: get-sar-template-url
         shell: bash
-        env:
-          url: ${{ needs.deploy_sar.outputs.sar-template-url }}
-        run: echo $url
+        run: echo '${{ toJSON(needs.deploy_sar.outputs) }}'
 
       - name: Assume AWS Credentials
         uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
