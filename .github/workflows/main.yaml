@@ -153,7 +153,7 @@ jobs:
             --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
             --query 'TemplateUrl' \
             --output text)
-          echo "Setting SAR application template URL"
+          echo "Setting SAR application template URL to $template_url"
           echo "template-url=$template_url" >> $GITHUB_OUTPUT
 
     outputs:
