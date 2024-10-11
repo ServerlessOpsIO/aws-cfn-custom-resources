@@ -23,6 +23,9 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
+  SarTemplateUrl:
+    Type: String
+    Description: SAR template URL
 
 Resources:
   DeployAccountCfnCustomResourcesSupportStackSet:
@@ -36,6 +39,10 @@ Resources:
           ParameterValue: !Ref AwsOrganizationId
         - ParameterKey: CustomResourceTopicName
           ParameterValue: !Ref CustomResourceTopicName
+        - ParameterKey: DnsRootZoneId
+          ParameterValue: !Ref DnsRootZoneId
+        - ParameterKey: DnsRootZoneAccountId
+          ParameterValue: !Ref DnsRootZoneAccountId
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Ref TargetOuIds
@@ -50,4 +57,4 @@ Resources:
         FailureToleranceCount: 1
         MaxConcurrentCount: 5
       PermissionModel: SERVICE_MANAGED
-      TemplateBody: *template_body
+      TemplateURL: !Ref SarTemplateUrl

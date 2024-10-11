@@ -24,6 +24,9 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
+  SarTemplateUrl:
+    Type: String
+    Description: SAR template URL
 
 Metadata:
   cfn-lint:
@@ -43,6 +46,7 @@ Resources:
         CustomResourceTopicName: CfnCustomResource
         DnsRootZoneId: !Ref DnsRootZoneId
         DnsRootZoneAccountId: !Ref DnsRootZoneAccountId
+        SarTemplateUrl: !Ref SarTemplateUrl
 
   DeployAccountStackSet:
     Type: AWS::Serverless::Application

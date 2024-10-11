@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: AWS CFN Custom Resources Support
 
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - I3011
+
 Parameters:
   AwsOrganizationId:
     Type: String
@@ -8,28 +14,23 @@ Parameters:
   CustomResourceTopicName:
     Type: String
     Description: Name of the SNS topic for custom resources
+  DnsRootZoneId:
+    Type: String
+    Description: Hosted Zone ID
+  DnsRootZoneAccountId:
+    Type: String
+    Description: DNS Root Zone Account ID
+  SarTemplateUrl:
+    Type: String
+    Description: SAR template URL
 
 Resources:
-  CustomResourceTopic:
-    Type: AWS::SNS::Topic
+  CfnCustomResourcesStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      TopicName: CustomResourceTopic-old
-      DisplayName: CFN Custom Resource Topic
-
-  CustomResourceTopicPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: cloudformation.amazonaws.com
-            Action: sns:Publish
-            Resource: !Ref CustomResourceTopic
-            Condition:
-              StringEquals:
-                "aws:PrincipalOrgID":
-                  - !Ref AwsOrganizationId
-      Topics:
-        - !Ref CustomResourceTopic
+      TemplateURL: !Ref SarTemplateUrl
+      Parameters:
+        AwsOrganizationId: !Ref AwsOrganizationId
+        CustomResourceTopicName: !Ref CustomResourceTopicName
+        DnsRootZoneId: !Ref DnsRootZoneId
+        DnsRootZoneAccountId: !Ref DnsRootZoneAccountId

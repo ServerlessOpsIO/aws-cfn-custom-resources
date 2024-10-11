@@ -158,7 +158,8 @@ jobs:
             )
           # b64 encode the URL so it can be passed as an output. This is because the value
           # includes within it strings that are masked by this job bvecause they're secrets.
-          encoded_template_url=$(echo -n $template_url | python3 -c "import urllib.parse; import sys; import base64; print(base64.b64encode(urllib.parse.quote(sys.stdin.read()).encode()).decode('ascii'))")
+          # And from testing, yes it does need to be double b64'ed.
+          encoded_template_url=$(echo -n $template_url | base64 -w0 | base64 -w0)
           echo "template-url=$encoded_template_url" >> "$GITHUB_OUTPUT"
 
     outputs:
@@ -223,10 +224,14 @@ jobs:
         with:
           python_version: 3.12
 
-      - name: Get SAR template URL
-        id: get-sar-template-url
+      - name: Decode SAR template URL
+        id: decode-sar-template-url
         shell: bash
-        run: echo '${{ toJSON(needs.deploy_sar.outputs) }}'
+        env:
+          b64_template_url: ${{ toJSON(needs.deploy_sar.outputs.template-url) }}
+        run: |
+          template_url=$(echo $b64_template_url | base64 -di | base64 -di)
+          echo "template-url=$template_url" >> "$GITHUB_OUTPUT"
 
       - name: Assume AWS Credentials
         uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
@@ -238,9 +243,12 @@ jobs:
 
       - name: Deploy via AWS SAM
         uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
+        env:
+          AWS_SAR_TEMPLATE_URL: ${{ steps.decode-sar-template-url.outputs.template-url }}
         with:
           aws_account_id: ${{ secrets.AWS_STACKSETS_ACCOUNT_ID }}
           template_file: packaged-stacksets-template.yaml
+          cfn_parameters_file: cfn-stacksets-parameters.json
           cfn_capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
           env_json: ${{ toJson(env) }}
           secrets_json: ${{ toJson(secrets) }}
