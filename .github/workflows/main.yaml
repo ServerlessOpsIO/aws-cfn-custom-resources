@@ -143,21 +143,26 @@ jobs:
             --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
             --statements PrincipalOrgIDs=${{ env.org_id }},Principals=*,Actions=Deploy,UnshareApplication,CreateCloudFormationTemplate
 
-      - name: Get SAR template URL
-        id: get-sar-template-url
+      - name: Create SAR template URL
+        id: create-sar-template-url
         shell: bash
         env:
           account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
         run: |
-          template_url=$(aws serverlessrepo create-cloud-formation-template \
-            --application-id arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
-            --query 'TemplateUrl' \
-            --output text)
-          echo "Setting SAR application template URL to $template_url"
-          echo "template-url=$template_url" >> $GITHUB_OUTPUT
+          echo "Created SAR application template URL"
+          template_url=$( \
+            aws serverlessrepo create-cloud-formation-template \
+              --application-id  arn:aws:serverlessrepo:us-east-1:${{ env.account_id }}:applications/cfn-custom-resources \
+              --query 'TemplateUrl' \
+              --output text \
+            )
+          # b64 encode the URL so it can be passed as an output. This is because the value
+          # includes within it strings that are masked by this job bvecause they're secrets.
+          encoded_template_url=$(echo -n $template_url | python3 -c "import urllib.parse; import sys; import base64; print(base64.b64encode(urllib.parse.quote(sys.stdin.read()).encode()).decode('ascii'))")
+          echo "template-url=$encoded_template_url" >> "$GITHUB_OUTPUT"
 
     outputs:
-      sar-template-url: ${{ steps.get-sar-template-url.outputs.template-url }}
+      template-url: '${{ steps.create-sar-template-url.outputs.template-url }}'
 
 
 
