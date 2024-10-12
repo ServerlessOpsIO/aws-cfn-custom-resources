@@ -22,10 +22,12 @@ try:
     # FIXME: We should be able to set the service name from the environment.
     LOGGER = Logger(utc=True, service="RegisterDnsZone")
     STS_CLIENT = boto3.client('sts')
-    CROSS_ACCOUNT_IAM_ROLE_NAME = 'RegisterDnsZoneCrossAccountRole'
+    CROSS_ACCOUNT_IAM_ROLE_NAME = os.environ.get('CROSS_ACCOUNT_IAM_ROLE_NAME', '')
     DNS_ROOT_ZONE_ID = os.environ.get('DNS_ROOT_ZONE_ID', '')
     DNS_ROOT_ZONE_ACCOUNT_ID = os.environ.get('DNS_ROOT_ZONE_ACCOUNT_ID', '')
 
+    if CROSS_ACCOUNT_IAM_ROLE_NAME == '':
+        raise ValueError("CROSS_ACCOUNT_IAM_ROLE_NAME must be provided")
     if DNS_ROOT_ZONE_ID == '':
         raise ValueError("DNS_ROOT_ZONE_ID must be provided")
     if DNS_ROOT_ZONE_ACCOUNT_ID == '':

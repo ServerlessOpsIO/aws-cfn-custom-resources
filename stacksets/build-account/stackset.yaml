@@ -23,6 +23,9 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
+  ManageDnsZoneIamRole:
+    Type: String
+    Description: IAM role name for RegisterDnsZone
 
 Resources:
   DeployAccountCfnCustomResourcesSupportStackSet:
@@ -40,6 +43,8 @@ Resources:
           ParameterValue: !Ref DnsRootZoneId
         - ParameterKey: DnsRootZoneAccountId
           ParameterValue: !Ref DnsRootZoneAccountId
+        - ParameterKey: ManageDnsZoneIamRole
+          ParameterValue: !Ref ManageDnsZoneIamRole
       StackInstancesGroup:
         - DeploymentTargets:
             OrganizationalUnitIds: !Ref TargetOuIds

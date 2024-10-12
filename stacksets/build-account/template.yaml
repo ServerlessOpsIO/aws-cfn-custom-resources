@@ -15,6 +15,9 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
+  ManageDnsZoneIamRole:
+    Type: String
+    Description: IAM role name for RegisterDnsZone
 
 Resources:
   CustomResourceTopic:
@@ -69,6 +72,7 @@ Resources:
         Variables:
           DNS_ROOT_ZONE_ID: !Ref DnsRootZoneId
           DNS_ROOT_ZONE_ACCOUNT_ID: !Ref DnsRootZoneAccountId
+          CROSS_ACCOUNT_IAM_ROLE_NAME: !Sub "ManageDnsZoneIamRole"
       Events:
         RegisterDnsSubZone:
           Type: SNS

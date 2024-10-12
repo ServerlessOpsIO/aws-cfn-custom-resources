@@ -24,6 +24,9 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
+  ManageDnsZoneIamRole:
+    Type: String
+    Description: IAM role name for RegisterDnsZone
 
 Metadata:
   cfn-lint:
@@ -43,6 +46,7 @@ Resources:
         CustomResourceTopicName: CfnCustomResource
         DnsRootZoneId: !Ref DnsRootZoneId
         DnsRootZoneAccountId: !Ref DnsRootZoneAccountId
+        ManageDnsZoneIamRole: !Ref ManageDnsZoneIamRole
 
   DeployAccountStackSet:
     Type: AWS::Serverless::Application

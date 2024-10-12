@@ -5,5 +5,6 @@
     "CiCdOuIds": $secrets.AWS_ORG_CICD_OU_ID,
     "CicdAwsAccountId": $secrets.AWS_CICD_ACCOUNT_ID,
     "DnsRootZoneId": $secrets.DNS_ROOT_ZONE_ID,
-    "DnsRootZoneAccountId": $secrets.DNS_ROOT_ZONE_ACCOUNT_ID
+    "DnsRootZoneAccountId": $secrets.DNS_ROOT_ZONE_ACCOUNT_ID,
+    "ManageDnsZoneIamRole": "ManageDnsZoneIamRole"
 }

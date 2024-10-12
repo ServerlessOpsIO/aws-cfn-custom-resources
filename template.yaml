@@ -3,10 +3,15 @@ Transform: AWS::Serverless-2016-10-31
 Description: AWS CFN Custom Resources
 
 Parameters:
+  AwsOrganizationId:
+    Type: String
+    Description: AWS Organization ID
   CicdAwsAccountId:
     Type: String
     Description: AWS Account ID of the CI/CD account
-
+  ManageDnsZoneIamRole:
+    Type: String
+    Description: IAM role name
 Metadata:
   cfn-lint:
     config:
@@ -21,3 +26,11 @@ Resources:
       Parameters:
         CustomResourceSsmParamName: /org/cicd/CustomResourceTopic
         CustomResourceArn: !Sub arn:aws:sns:${AWS::Region}:${CicdAwsAccountId}:CfnCustomResource
+
+  DnsManagementStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: './stacksets/dns-mgmt/template.yaml'
+      Parameters:
+        AwsOrganizationId: !Ref AwsOrganizationId
+        ManageDnsZoneIamRole: !Ref ManageDnsZoneIamRole
