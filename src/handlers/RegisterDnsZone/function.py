@@ -44,10 +44,14 @@ def _get_cross_account_credentials(
 ) -> CredentialsTypeDef:
     '''Return the IAM role for cross-account access'''
     role_arn = 'arn:aws:iam::{}:role/{}'.format(account_id, role_name)
-    response = STS_CLIENT.assume_role(
-        RoleArn=role_arn,
-        RoleSessionName='RegisterDnsZoneCrossAccount'
-    )
+    try:
+        response = STS_CLIENT.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName='RegisterDnsZoneCrossAccount'
+        )
+    except Exception as e:
+        LOGGER.exception(e)
+        raise e
 
     return response['Credentials']
 
