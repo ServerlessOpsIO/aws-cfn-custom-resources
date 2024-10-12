@@ -48,6 +48,7 @@ jobs:
         run: sam build -t stacksets/build-account/template.yaml
 
       # We have a StackSet with a Lambda function in it.
+      # NOTE: We need to package the template output by the build so we get dependencies.
       - name: Upload SAM artifact (build-account-template)
         id: upload-sam-build-account-template
         shell: bash
@@ -55,7 +56,7 @@ jobs:
           build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
         run: |
           sam package \
-            --template stacksets/build-account/template.yaml \
+            --template .aws-sam/build/template.yaml \
             --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
             --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
             --region us-east-1 \
