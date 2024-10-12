@@ -29,9 +29,20 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Sid: AllowCloudFormation
+            Effect: Allow
             Principal:
               Service: cloudformation.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref CustomResourceTopic
+            Condition:
+              StringEquals:
+                "aws:PrincipalOrgID":
+                  - !Ref AwsOrganizationId
+          - Sid: AllowServiceCatalog
+            Effect: Allow
+            Principal:
+              Service: servicecatalog.amazonaws.com
             Action: sns:Publish
             Resource: !Ref CustomResourceTopic
             Condition:
