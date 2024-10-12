@@ -42,6 +42,10 @@ jobs:
         shell: bash
         run: pipenv run pytest
 
+      - name: SAM build (Build Account Template)
+        id: sam-build
+        shell: bash
+        run: sam build -t stacksets/build-account/template.yaml
 
       # We have a StackSet with a Lambda function in it.
       - name: Upload SAM artifact (build-account-template)
