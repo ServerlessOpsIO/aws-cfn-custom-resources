@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: AWS CFN Custom Resources Support
-
-Metadata:
-  cfn-lint:
-    config:
-      ignore_checks:
-        - I3011
+Transform: AWS::Serverless-2016-10-31
 
 Parameters:
   AwsOrganizationId:
@@ -20,17 +15,51 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
-  SarTemplateUrl:
-    Type: String
-    Description: SAR template URL
 
 Resources:
-  CfnCustomResourcesStack:
-    Type: AWS::CloudFormation::Stack
+  CustomResourceTopic:
+    Type: AWS::SNS::Topic
     Properties:
-      TemplateURL: !Ref SarTemplateUrl
-      Parameters:
-        AwsOrganizationId: !Ref AwsOrganizationId
-        CustomResourceTopicName: !Ref CustomResourceTopicName
-        DnsRootZoneId: !Ref DnsRootZoneId
-        DnsRootZoneAccountId: !Ref DnsRootZoneAccountId
+      TopicName: !Ref CustomResourceTopicName
+      DisplayName: CFN Custom Resource Topic
+
+  CustomResourceTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref CustomResourceTopic
+            Condition:
+              StringEquals:
+                "aws:PrincipalOrgID":
+                  - !Ref AwsOrganizationId
+      Topics:
+        - !Ref CustomResourceTopic
+
+  RegisterDnsZoneFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: function.handler
+      Runtime: python3.12
+      CodeUri: ../../src/handlers/RegisterDnsZone
+      Description: Register DNS Sub Zone
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          DNS_ROOT_ZONE_ID: !Ref DnsRootZoneId
+          DNS_ROOT_ZONE_ACCOUNT_ID: !Ref DnsRootZoneAccountId
+      Events:
+        RegisterDnsSubZone:
+          Type: SNS
+          Properties:
+            Topic: !Ref CustomResourceTopic
+            FilterPolicyScope: MessageBody
+            FilterPolicy:
+              ResourceType:
+                - Custom::RegisterDnsZone

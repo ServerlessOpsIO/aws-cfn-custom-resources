@@ -1,5 +1,5 @@
 Metadata:
-  localTemplateFile: &template_body ./template.yaml
+  localTemplateFile: &template_body ./translated-template.json
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Execution account CFN Custom Resources StackSet
@@ -23,9 +23,6 @@ Parameters:
   DnsRootZoneAccountId:
     Type: String
     Description: DNS Root Zone Account ID
-  SarTemplateUrl:
-    Type: String
-    Description: SAR template URL
 
 Resources:
   DeployAccountCfnCustomResourcesSupportStackSet:
@@ -56,5 +53,8 @@ Resources:
         RegionConcurrencyType: PARALLEL
         FailureToleranceCount: 1
         MaxConcurrentCount: 5
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
       PermissionModel: SERVICE_MANAGED
-      TemplateURL: !Ref SarTemplateUrl
+      TemplateBody: *template_body
+
