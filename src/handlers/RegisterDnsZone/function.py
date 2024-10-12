@@ -12,7 +12,7 @@ from aws_lambda_powertools.utilities.data_classes import (
     CloudFormationCustomResourceEvent,
     event_source
 )
-helper = CfnResource()
+helper = CfnResource(json_logging=True)
 
 try:
     # FIXME: We should be able to set the service name from the environment.
