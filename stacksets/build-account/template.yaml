@@ -82,3 +82,10 @@ Resources:
             FilterPolicy:
               ResourceType:
                 - Custom::RegisterDnsZone
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sts:AssumeRole
+              Resource: !Sub arn:aws:iam::${DnsRootZoneAccountId}:role/${ManageDnsZoneIamRole}

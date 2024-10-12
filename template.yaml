@@ -34,3 +34,4 @@ Resources:
       Parameters:
         AwsOrganizationId: !Ref AwsOrganizationId
         ManageDnsZoneIamRole: !Ref ManageDnsZoneIamRole
+        CicdAwsAccountId: !Ref CicdAwsAccountId
