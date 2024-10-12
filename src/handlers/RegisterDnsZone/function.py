@@ -181,4 +181,6 @@ def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
 @event_source(data_class=CloudFormationCustomResourceEvent)
 def handler(event: CloudFormationCustomResourceEvent, context: LambdaContext):
     LOGGER.info("Event received", extra={'event': event})
-    helper(event, context)
+    # FIXME: crhelper and PowerTools don't play well together so pass the raw data. We'll use
+    # the event_source dataclass on this function for deserialization still though.
+    helper(event._data, context)
