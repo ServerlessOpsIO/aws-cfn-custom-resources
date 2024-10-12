@@ -1,15 +1,19 @@
 import os
 import boto3
+import json
+
 from crhelper import CfnResource
 from dataclasses import dataclass
 from mypy_boto3_route53 import Route53Client
 from mypy_boto3_route53.type_defs import ChangeBatchTypeDef, ChangeResourceRecordSetsRequestRequestTypeDef
 from mypy_boto3_sts.type_defs import CredentialsTypeDef
+from typing import Dict
 
 from aws_lambda_powertools.logging import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.utilities.data_classes import (
     CloudFormationCustomResourceEvent,
+    SNSEvent,
     event_source
 )
 helper = CfnResource(json_logging=True)
@@ -67,11 +71,10 @@ def _get_cross_account_route53_client(
 
 @helper.create
 @helper.update
-@event_source(data_class=CloudFormationCustomResourceEvent)
-def create_or_update(event: CloudFormationCustomResourceEvent, _: LambdaContext):
+def create_or_update(event, _: LambdaContext):
     # Extract ResourceProperties from the event
-    zone_name = event.resource_properties.get('ZoneName')
-    nameservers = event.resource_properties.get('NameServers')
+    zone_name = event.get('ResourceProperties').get('ZoneName')
+    nameservers = event.get('ResourceProperties').get('NameServers')
 
     if not zone_name:
         raise ValueError("ZoneName must be provided")
@@ -127,11 +130,10 @@ def create_or_update(event: CloudFormationCustomResourceEvent, _: LambdaContext)
 
 
 @helper.delete
-@event_source(data_class=CloudFormationCustomResourceEvent)
-def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
+def delete(event, _: LambdaContext):
     # Extract ResourceProperties from the event
-    zone_name = event.resource_properties.get('ZoneName')
-    nameservers = event.resource_properties.get('NameServers')
+    zone_name = event.get('ResourceProperties').get('ZoneName')
+    nameservers = event.get('ResourceProperties').get('NameServers')
 
     if not zone_name:
         raise ValueError("ZoneName must be provided")
@@ -178,9 +180,10 @@ def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
 
     LOGGER.info("Change Info: {}".format(response['ChangeInfo']))
 
-@event_source(data_class=CloudFormationCustomResourceEvent)
-def handler(event: CloudFormationCustomResourceEvent, context: LambdaContext):
+def handler(event: Dict, context: LambdaContext):
     LOGGER.info("Event received", extra={'event': event})
+    event_message = json.loads(event['Records'][0]['Sns']['Message'])
+    LOGGER.info("Event message received", extra={'event_message': event_message})
     # FIXME: crhelper and PowerTools don't play well together so pass the raw data. We'll use
     # the event_source dataclass on this function for deserialization still though.
-    helper(event._data, context)
+    helper(event_message, context)

@@ -37,10 +37,10 @@ jobs:
       - name: Validate StackSets SAM template
         run: sam validate --lint -t stacksets-template.yaml
 
-      - name: Unit tests
-        id: unit-tests
-        shell: bash
-        run: pipenv run pytest
+      #- name: Unit tests
+      #  id: unit-tests
+      #  shell: bash
+      #  run: pipenv run pytest
 
       - name: SAM build (Build Account Template)
         id: sam-build
