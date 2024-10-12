@@ -1,9 +1,21 @@
 {
-  "RequestType" : "Create",
-  "ResponseURL" : "http://pre-signed-S3-url-for-response",
-  "StackId" : "arn:aws:cloudformation:us-west-2:123456789012:stack/mystack/5b918d10-cd98-11ea-90d5-0a9cd3354c10",
-  "RequestId" : "unique id for this create request",
-  "ResourceType" : "Custom::TestResource",
-  "LogicalResourceId" : "MyTestResource",
-  "ResourceProperties" : {}
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1::ExampleTopic",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:ExampleTopic",
+        "Subject": "example subject",
+        "Message": "example message",
+        "Timestamp": "1970-01-01T00:00:00.000Z",
+        "SignatureVersion": "1",
+        "Signature": "EXAMPLE",
+        "SigningCertUrl": "EXAMPLE",
+        "UnsubscribeUrl": "EXAMPLE"
+      }
+    }
+  ]
 }

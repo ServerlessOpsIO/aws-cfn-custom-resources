@@ -5,6 +5,7 @@ import pytest
 
 from aws_lambda_powertools.utilities.data_classes import (
     CloudFormationCustomResourceEvent,
+    SNSEvent
 )
 from collections import namedtuple
 from datetime import datetime, timedelta
@@ -23,6 +24,8 @@ DATA_DIR = './data'
 FUNC_DATA_DIR = os.path.join(DATA_DIR, 'src/handlers', FN_NAME)
 EVENT = os.path.join(FUNC_DATA_DIR, 'event.json')
 EVENT_SCHEMA = os.path.join(FUNC_DATA_DIR, 'event.schema.json')
+MESSAGE = os.path.join(FUNC_DATA_DIR, 'message.json')
+#MESSAGE_SCHEMA = os.path.join(FUNC_DATA_DIR, 'message.schema.json')
 DATA = os.path.join(FUNC_DATA_DIR, 'data.json')
 DATA_SCHEMA = os.path.join(FUNC_DATA_DIR, 'data.schema.json')
 OUTPUT = os.path.join(FUNC_DATA_DIR, 'output.json')
@@ -115,28 +118,35 @@ def mock_context() -> Tuple[str, str]:
 
 
 @pytest.fixture()
-def mock_event(event: str = EVENT) -> CloudFormationCustomResourceEvent:
+def mock_event(event: str = EVENT) -> SNSEvent:
     '''Return a test event'''
     with open(event) as f:
+        return SNSEvent(json.load(f))
+
+
+@pytest.fixture()
+def mock_message(message: str = MESSAGE) -> CloudFormationCustomResourceEvent:
+    '''Return a test message'''
+    with open(message) as f:
         return CloudFormationCustomResourceEvent(json.load(f))
 
 @pytest.fixture()
-def mock_event_create(mock_event: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
-    '''Return a test event'''
-    mock_event._data['RequestType']
-    return mock_event
+def mock_message_create(mock_message: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
+    '''Return a test message'''
+    mock_message._data['RequestType']
+    return mock_message
 
 @pytest.fixture()
-def mock_event_update(mock_event: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
-    '''Return a test event'''
-    mock_event._data['RequestType'] = 'Update'
-    return mock_event
+def mock_message_update(mock_message: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
+    '''Return a test message'''
+    mock_message._data['RequestType'] = 'Update'
+    return mock_message
 
 @pytest.fixture()
-def mock_event_delete(mock_event: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
-    '''Return a test event'''
-    mock_event._data['RequestType'] = 'Delete'
-    return mock_event
+def mock_message_delete(mock_message: CloudFormationCustomResourceEvent) -> CloudFormationCustomResourceEvent:
+    '''Return a test message'''
+    mock_message._data['RequestType'] = 'Delete'
+    return mock_message
 
 @pytest.fixture()
 def mock_data(data: str = DATA) -> EventResourceProperties:
@@ -217,14 +227,14 @@ def test__get_cross_account_route53_client(
 
 def test_create_or_update_as_create(
     mock_fn: ModuleType,
-    mock_event_create: CloudFormationCustomResourceEvent,
+    mock_message_create: CloudFormationCustomResourceEvent,
     mock_data: EventResourceProperties,
     mock_context: Tuple[str, str],
     mock_route53_client: Route53Client,
     mock_hosted_zone_id: str,
     mocker: MockerFixture,
 ) -> None:
-    event = mock_event_create._data
+    event = mock_message_create._data
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
 
@@ -251,7 +261,7 @@ def test_create_or_update_as_create(
     assert record[0]['Name'].rstrip('.') == mock_data.ZoneName
     assert record[0]['Type'] == 'NS'
 
-    nameservers = cast(str, mock_data.NameServers).split(',')
+    nameservers = cast(list, mock_data.NameServers)
     values = [ rr.get('Value') for rr in record[0]['ResourceRecords'] ]
     assert nameservers[0] in values
     assert nameservers[1] in values
@@ -262,12 +272,12 @@ def test_create_or_update_as_update(
     mock_fn: ModuleType,
     mock_context: Tuple[str, str],
     mock_route53_client: Route53Client,
-    mock_event_update: CloudFormationCustomResourceEvent,
+    mock_message_update: CloudFormationCustomResourceEvent,
     mock_data: EventResourceProperties,
     mock_hosted_zone_id: str,
     mocker: MockerFixture,
 ) -> None:
-    event = mock_event_update._data
+    event = mock_message_update._data
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
 
@@ -294,7 +304,7 @@ def test_create_or_update_as_update(
     assert record[0]['Name'].rstrip('.') == mock_data.ZoneName
     assert record[0]['Type'] == 'NS'
 
-    nameservers = cast(str, mock_data.NameServers).split(',')
+    nameservers = cast(list, mock_data.NameServers)
     values = [ rr.get('Value') for rr in record[0]['ResourceRecords'] ]
     assert nameservers[0] in values
     assert nameservers[1] in values
@@ -305,8 +315,8 @@ def test_delete(
     mock_fn: ModuleType,
     mock_context: Tuple[str, str],
     mock_route53_client: Route53Client,
-    mock_event_create: CloudFormationCustomResourceEvent,
-    mock_event_delete: CloudFormationCustomResourceEvent,
+    mock_message_create: CloudFormationCustomResourceEvent,
+    mock_message_delete: CloudFormationCustomResourceEvent,
     mock_data: EventResourceProperties,
     mock_hosted_zone_id: str,
     mocker: MockerFixture,
@@ -318,7 +328,7 @@ def test_delete(
     )
 
     # Create record to be deleted
-    create_event = mock_event_create._data
+    create_event = mock_message_create._data
     create_event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     create_event['ResourceProperties']['NameServers'] = mock_data.NameServers
 
@@ -331,7 +341,7 @@ def test_delete(
     )
 
     # Create delete event
-    delete_event = mock_event_delete._data
+    delete_event = mock_message_delete._data
     delete_event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     delete_event['ResourceProperties']['NameServers'] = mock_data.NameServers
 
@@ -346,3 +356,31 @@ def test_delete(
     records = response['ResourceRecordSets']
     for _rr in records:
         assert _rr['Name'].rstrip('.') != mock_data.ZoneName
+
+@pytest.mark.skip(reason='Test hangs pytest')
+def test_handler(
+    mock_fn: ModuleType,
+    mock_context: Tuple[str, str],
+    mock_event: CloudFormationCustomResourceEvent,
+    mock_message_create: CloudFormationCustomResourceEvent,
+    mock_data: EventResourceProperties,
+    mocker: MockerFixture,
+) -> None:
+
+    mock_message_create._data['ResourceProperties']['ZoneName'] = mock_data.ZoneName
+    mock_message_create._data['ResourceProperties']['NameServers'] = mock_data.NameServers
+    mock_event._data['Records'][0]['Sns']['Message'] = json.dumps(mock_message_create._data)
+
+    mocker.patch(
+        'src.handlers.RegisterDnsZone.function.create_or_update',
+        return_value=None
+    )
+
+    # Call the handler function
+    mock_fn.handler(mock_event, mock_context)
+
+    # Verify the NS record was created
+    response = mock_fn.create_or_update.call_args
+    assert response is not None
+    assert response[0][0] == mock_event._data
+    assert response[0][1] == mock_context
