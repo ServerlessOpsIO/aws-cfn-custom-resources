@@ -179,4 +179,5 @@ def delete(event: CloudFormationCustomResourceEvent, context: LambdaContext):
     LOGGER.info("Change Info: {}".format(response['ChangeInfo']))
 
 def handler(event: CloudFormationCustomResourceEvent, context: LambdaContext):
+    LOGGER.info("Event received", extra={'event': event})
     helper(event, context)
