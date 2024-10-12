@@ -56,7 +56,7 @@ jobs:
         run: |
           sam package \
             --template stacksets/build-account/template.yaml \
-            --s3-bucket aws-sar-${{ env.build_aws_account_id }}-us-east-1  \
+            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
             --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
             --region us-east-1 \
             --output-template-file stacksets/build-account/packaged-template.yaml
