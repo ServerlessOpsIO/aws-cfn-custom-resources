@@ -80,8 +80,6 @@ def create_or_update(event, _: LambdaContext):
         raise ValueError("ZoneName must be provided")
     if not nameservers:
         raise ValueError("NameServers must be provided")
-    else:
-        nameservers = nameservers.split(',')
 
     if not zone_name.endswith('.'):
         zone_name += '.'
@@ -140,8 +138,6 @@ def delete(event, _: LambdaContext):
 
     if not nameservers:
         raise ValueError("NameServers must be provided")
-    else:
-        nameservers = nameservers.split(',')
 
     LOGGER.info(
         "Deleting zone NS record",
