@@ -15,4 +15,5 @@ Resources:
     Properties:
       Name: !Ref CustomResourceSsmParamName
       Type: String
+      Description: ARN of CFN Custom Resource target
       Value: !Ref CustomResourceArn
