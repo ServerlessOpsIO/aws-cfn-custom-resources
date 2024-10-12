@@ -31,24 +31,28 @@ Resources:
         Statement:
           - Sid: AllowCloudFormation
             Effect: Allow
-            Principal:
-              Service: cloudformation.amazonaws.com
+            Principal: "*"
             Action: sns:Publish
             Resource: !Ref CustomResourceTopic
             Condition:
               StringEquals:
                 "aws:PrincipalOrgID":
                   - !Ref AwsOrganizationId
+              StringLike:
+                "aws:PrincipalArn":
+                  - !Sub "arn:${AWS::Partition}:iam::*:role/CfnExecIamRole"
           - Sid: AllowServiceCatalog
             Effect: Allow
-            Principal:
-              Service: servicecatalog.amazonaws.com
+            Principal: "*"
             Action: sns:Publish
             Resource: !Ref CustomResourceTopic
             Condition:
               StringEquals:
                 "aws:PrincipalOrgID":
                   - !Ref AwsOrganizationId
+              StringLike:
+                "aws:PrincipalArn":
+                  - !Sub "arn:${AWS::Partition}:iam::*:role/ServiceCatalogCfnExecIamRole"
       Topics:
         - !Ref CustomResourceTopic
 
