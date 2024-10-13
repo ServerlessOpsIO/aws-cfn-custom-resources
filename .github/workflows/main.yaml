@@ -43,26 +43,17 @@ jobs:
         run: pipenv run pytest
 
       - name: SAM build (Build Account Template)
-        id: sam-build
+        id: sam-build-build-account
         shell: bash
         run: sam build -t stacksets/build-account/template.yaml
 
-      # We have a StackSet with a Lambda function in it.
-      # NOTE: We need to package the template output by the build so we get dependencies.
-      - name: Upload SAM artifact (build-account-template)
-        id: upload-sam-build-account-template
-        shell: bash
-        env:
-          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-        run: |
-          sam package \
-            --template .aws-sam/build/template.yaml \
-            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
-            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
-            --region us-east-1 \
-            --output-template-file stacksets/build-account/packaged-template.yaml
+      - name: Package SAM artifact (Build Account Template)
+        id: package-sam-build-account
+        uses: ServerlessOpsIO/gha-package-aws-sam@v1
+        with:
+          packaged_template_file: stacksets/build-account/packaged-template.yaml
 
-      - name: Transform SAM template
+      - name: Transform SAM template (Build Account Template)
         id: transform-sam-template
         shell: bash
         run: |
@@ -82,31 +73,26 @@ jobs:
               $_f;
           done
 
-      - name: Upload SAM artifact (template)
-        id: upload-sam-template
-        shell: bash
-        env:
-          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-        run: |
-          sam package \
-            --template template.yaml \
-            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
-            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
-            --region us-east-1 \
-            --output-template-file packaged-template.yaml
 
-      - name: Upload SAM artifact (deletagte-template)
-        id: upload-sam-stackset-template
+      - name: SAM build (StackSets Template)
+        id: sam-build-stacksets
         shell: bash
-        env:
-          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-        run: |
-          sam package \
-            --template stacksets-template.yaml \
-            --s3-bucket aws-sam-cli-sourcebucket-${{ env.build_aws_account_id }}-us-east-1  \
-            --s3-prefix ${{ env.GITHUB_REPOSITORY_OWNER_PART_SLUG_URL }}/${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG_URL }}/${{ env.GITHUB_REF_SLUG_URL }} \
-            --region us-east-1 \
-            --output-template-file packaged-stacksets-template.yaml
+        run: sam build -t stacksets-template.yaml
+
+      - name: Package SAM artifact (Stacksets Template)
+        id: package-sam-stacksets
+        uses: ServerlessOpsIO/gha-package-aws-sam@v1
+        with:
+          packaged_template_file: packaged-stacksets-template.yaml
+
+      - name: SAM build
+        id: sam-build
+        shell: bash
+        run: sam build -t template.yaml
+
+      - name: Package SAM artifact
+        id: package-sam
+        uses: ServerlessOpsIO/gha-package-aws-sam@v1
 
       - name: Store Artifacts
         uses: ServerlessOpsIO/gha-store-artifacts@v1
